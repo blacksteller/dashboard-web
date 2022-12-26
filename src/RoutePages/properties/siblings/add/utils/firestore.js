@@ -48,6 +48,7 @@ export const saveProperties = async (
 		propertyName,
 		locationName,
 		landmark,
+		owner,
 		ammenities,
 		isPlot,
 		story,
@@ -67,6 +68,7 @@ export const saveProperties = async (
 			propertyName,
 			landmark,
 			locationName,
+			owner,
 			plot: true,
 			area,
 			price,
@@ -78,9 +80,10 @@ export const saveProperties = async (
 		};
 	} else {
 		data = {
-			title: propertyName,
+			propertyName,
 			landmark,
 			locationName,
+			owner,
 			plot: false,
 			story,
 			bhk,

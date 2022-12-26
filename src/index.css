@@ -18,4 +18,8 @@
 	.dark-border-normal {
 		@apply border-gray-100;
 	}
+
+	.simple-input {
+		@apply relative w-auto px-0 text-right outline-none focus:border-2 duration-100;
+	}
 }

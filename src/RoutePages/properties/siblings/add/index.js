@@ -1,7 +1,7 @@
 /* eslint-disable eqeqeq */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { FiX } from "react-icons/fi";
+import { FiChevronDown, FiX } from "react-icons/fi";
 import { storage } from "./utils/storage";
 import { AddContext } from "./addContext";
 import {
@@ -19,6 +19,7 @@ import {
 import { addLocation, saveProperties } from "./utils/firestore";
 import { ContainerContext } from "../../../../contexts/Container";
 import TextField from "../sharedComponents/textField";
+import ProfileNotCreated from "../../profileNotCreated";
 
 function AddProperties() {
 	const {
@@ -26,7 +27,9 @@ function AddProperties() {
 		setOpenModal,
 		setUploading,
 		setUploadingInfo,
+		profiles,
 		setClearStorage: containerClearStorage,
+		fetchProperties,
 	} = useContext(ContainerContext);
 
 	const { setReload } = useContext(AddContext);
@@ -35,38 +38,44 @@ function AddProperties() {
 
 	const [clearStorage, setClearStorage] = useState(false);
 
-	// const [propertyName, setPropertyName] = useState("");
-	// const [location, setLocation] = useState("");
-	// const [landmark, setLandmark] = useState("");
-	// const [ammenities, setAmmenities] = useState([]);
-	// const [bhk, setBhk] = useState(0);
-	// const [story, setStory] = useState(0);
-	// const [area, setArea] = useState(undefined);
-	// const [price, setPrice] = useState(undefined);
-	// const [lat, setLat] = useState(undefined);
-	// const [lon, setLon] = useState(undefined);
-	// const [isPlot, setIsPlot] = useState(true);
+	const [propertyName, setPropertyName] = useState("");
+	const [location, setLocation] = useState("");
+	const [landmark, setLandmark] = useState("");
+	const [owner, setOwner] = useState(null);
+	const [ammenities, setAmmenities] = useState([]);
+	const [bhk, setBhk] = useState(0);
+	const [story, setStory] = useState(0);
+	const [area, setArea] = useState(undefined);
+	const [price, setPrice] = useState(undefined);
+	const [lat, setLat] = useState(undefined);
+	const [lon, setLon] = useState(undefined);
+	const [isPlot, setIsPlot] = useState(true);
 	const [images, setImages] = useState([]);
 
 	// Default values for debugging
-	const [propertyName, setPropertyName] = useState("Mero Sano Ghar");
-	const [location, setLocation] = useState("Damak");
-	const [landmark, setLandmark] = useState("Near subba chowk");
-	const [ammenities, setAmmenities] = useState(["damak", "sano-ghar"]);
-	const [bhk, setBhk] = useState(5);
-	const [area, setArea] = useState(1200.0);
-	const [story, setStory] = useState(3);
-	const [price, setPrice] = useState(7500000);
-	const [lat, setLat] = useState(26.8738343);
-	const [lon, setLon] = useState(87.242342324);
-	const [isPlot, setIsPlot] = useState(false);
+	// const [propertyName, setPropertyName] = useState("Mero Sano Ghar");
+	// const [location, setLocation] = useState("Damak");
+	// const [landmark, setLandmark] = useState("Near subba chowk");
+	// const [owner, setOwner] = useState(null);
+	// const [ammenities, setAmmenities] = useState(["damak", "sano-ghar"]);
+	// const [bhk, setBhk] = useState(5);
+	// const [area, setArea] = useState(1200.0);
+	// const [story, setStory] = useState(3);
+	// const [price, setPrice] = useState(7500000);
+	// const [lat, setLat] = useState(26.8738343);
+	// const [lon, setLon] = useState(87.242342324);
+	// const [isPlot, setIsPlot] = useState(false);
 
 	const validateForm = () => {
 		let isValid = false;
 
+		// Check if the owner name is provided or not
+		if (owner == null || owner == "") {
+			alert("Owner name is required.");
+		}
 		// Check if the ammenities is provided or not,
 		// If not then focus the user to the ammenities input field
-		if (ammenities.length <= 0) {
+		else if (ammenities.length <= 0) {
 			const ammenitiesField = document.getElementById("ammenities");
 
 			alert("Ammenities should not be empty 😐🤨");
@@ -96,6 +105,12 @@ function AddProperties() {
 		return isValid;
 	};
 
+	/**
+	 * Uploading form data to firebase/firestore
+	 *
+	 * @param {event} e
+	 * @returns
+	 */
 	const uploadFormData = async (e) => {
 		e.preventDefault();
 
@@ -110,6 +125,7 @@ function AddProperties() {
 					propertyName,
 					locationName: location,
 					landmark,
+					owner,
 					ammenities,
 					bhk,
 					story,
@@ -140,25 +156,30 @@ function AddProperties() {
 									setUploadingInfo(data.msg);
 								})
 								.catch((error) => console.log(error))
-								.finally(() => containerClearStorage(true));
+								.finally(() => {
+									containerClearStorage(true);
+									setUploading(false);
+									fetchProperties();
+								});
 						} else {
 						}
 					})
-					.catch((error) => console.log(error))
-					.finally(() => {
-						setUploading(false);
-					});
+					.catch((error) => console.log(error));
 			} else {
 				return;
 			}
 		}
 	};
 
+	/**
+	 * Restore all value from localstorage
+	 */
 	const restore = () => {
 		const datas = {
 			propertyName: storage.get("propertyName") ?? propertyName,
 			location: storage.get("location") ?? location,
 			landmark: storage.get("landmark") ?? landmark,
+			owner: storage.get("owner") ?? owner,
 			ammenities: storage.get("ammenities") ?? ammenities,
 			bhk: storage.get("bhk") ?? bhk,
 			story: storage.get("story") ?? story,
@@ -172,6 +193,7 @@ function AddProperties() {
 		setPropertyName(datas.propertyName);
 		setLocation(datas.location);
 		setLandmark(datas.landmark);
+		setOwner(datas.owner);
 		setAmmenities(datas.ammenities);
 		setBhk(datas.bhk);
 		setStory(datas.story);
@@ -209,6 +231,7 @@ function AddProperties() {
 		propertyName,
 		location,
 		landmark,
+		owner,
 		ammenities,
 		bhk,
 		story,
@@ -220,317 +243,379 @@ function AddProperties() {
 		isPlot,
 	]);
 
-	return (
-		<>
-			<div className="w-full h-full overflow-hidden bg-transparent">
-				<div className="w-full h-10 border-b dark:border-gray-800 px-4 flex items-center justify-between">
-					<div className="text-left capitalize text-sm dark:text-gray-300">
-						<span>➕ Add Your Properties</span>
+	// Checking if the profiles are created or not,
+	// If any profile is not created then you can't add properties
+	// Returning ProfileNotCreated Component if profile is not created yet.
+	if (profiles.length > 0) {
+		return (
+			<>
+				<div className="w-full h-full overflow-hidden bg-transparent">
+					<div className="w-full h-10 border-b dark:border-gray-800 px-4 flex items-center justify-between">
+						<div className="text-left capitalize text-sm dark:text-gray-300">
+							<span>➕ Add Your Properties</span>
+						</div>
+
+						{clearStorage && (
+							<div
+								className="text-xs text-blue-400 px-2 py-1 rounded-lg dark:hover:bg-gray-800/50 hover:bg-gray-100 cursor-pointer duration-100"
+								onClick={() => {
+									// Check if the images is added or not,
+									// If, then confirm reload otherwise images will have to select again
+									if (images.length <= 0) {
+										const confirmed = window.confirm(
+											"Are you sure you want to reload? 🥲"
+										);
+
+										if (confirmed) {
+											localStorage.clear();
+
+											setReload(true);
+										} else {
+											return;
+										}
+									} else {
+										const confirmed = window.confirm(
+											"Selected images will get lost and have to select again. \n Are you sure you want to reload? 🤔"
+										);
+
+										if (confirmed) {
+											localStorage.clear();
+
+											setReload(true);
+										} else {
+											return;
+										}
+									}
+								}}>
+								<span>Clear Storage ⚠️</span>
+							</div>
+						)}
 					</div>
 
-					{clearStorage && (
-						<div
-							className="text-xs text-blue-400 px-2 py-1 rounded-lg dark:hover:bg-gray-800/50 hover:bg-gray-100 cursor-pointer duration-100"
-							onClick={() => {
-								// Check if the images is added or not,
-								// If, then confirm reload otherwise images will have to select again
-								if (images.length <= 0) {
-									const confirmed = window.confirm(
-										"Are you sure you want to reload? 🥲"
-									);
-
-									if (confirmed) {
-										localStorage.clear();
-
-										setReload(true);
-									} else {
-										return;
-									}
-								} else {
-									const confirmed = window.confirm(
-										"Selected images will get lost and have to select again. \n Are you sure you want to reload? 🤔"
-									);
-
-									if (confirmed) {
-										localStorage.clear();
-
-										setReload(true);
-									} else {
-										return;
-									}
-								}
-							}}>
-							<span>Clear Storage ⚠️</span>
-						</div>
-					)}
-				</div>
-
-				<div className="relative w-full h-[calc(100%-40px)]">
-					{/* Form for the property details */}
-					<form
-						ref={formRef}
-						action=""
-						method="POST"
-						encType="multipart/form-data"
-						className="relative w-full h-full flex justify-center"
-						onSubmit={(event) => uploadFormData(event)}>
-						<div className="relative w-full h-full p-4 pb-14 overflow-auto">
-							<div className="relative w-full h-auto grid gap-5">
-								<div className="relative flex items-center gap-5 flex-wrap">
-									{/* Name of the property */}
-									<TextField
-										id={"propertyName"}
-										title={"Name of the Property ( < 50 )"}
-										setVal={(val) => {
-											setPropertyName(val);
-
-											// Remove all spaces and replace spaces to '-'
-											let tag = val.toLowerCase().replace(/\s\s+/g, " ");
-											tag = tag.replace(/\s/g, "-");
-											ammenities[0] = tag;
-											setAmmenities([...ammenities]);
-
-											storage.set("propertyName", val);
-										}}
-										defaultValue={propertyName}
-										required
-										minLength={3}
-										maxLength={50}
-									/>
-
-									{/* Location of the property where it is located */}
-									<TextField
-										id={"location"}
-										title={"Name of the Location"}
-										setVal={(val) => {
-											setLocation(val);
-
-											// Remove all spaces and replace spaces to '-'
-											let tag = val.toLowerCase().replace(/\s\s+/g, " ");
-											tag = tag.replace(/\s/g, "-");
-											ammenities[1] = tag;
-											setAmmenities([...ammenities]);
-
-											storage.set("location", val);
-										}}
-										defaultValue={location}
-										minLength={3}
-										maxLength={20}
-										required
-									/>
-								</div>
-
-								<div className="relative flex items-start gap-5 flex-wrap">
-									{/* Landmark or the info of the property */}
-									<Landmark
-										setLandmark={(val) => {
-											setLandmark(val);
-
-											storage.set("landmark", val);
-										}}
-										defaultValue={landmark}
-									/>
-
-									{/* Set if the property is plot or a house false:house && viceversa */}
-									<IsPlot
-										isPlot={isPlot}
-										updatePlot={(plot) => {
-											setIsPlot(plot);
-
-											storage.set("isPlot", plot);
-										}}
-									/>
-								</div>
-
-								{/* Ammenities */}
-								<div className="h-auto grid gap-2 justify-items-start">
-									<label
-										htmlFor="ammenities"
-										className="text-xs font-robotoUIMedium">
-										<span>{"Ammenities or Tags"}</span>
-									</label>
-
-									{/* Ammenities */}
-									<div className="relative w-1/2 flex gap-2 flex-wrap">
-										{ammenities.map((a, id) => (
-											<div
-												key={id}
-												className="relative px-2 py-1 rounded cursor-pointer text-xs dark:bg-gray-800/40 bg-gray-200 dark:text-gray-400 hover:shadow-2xl"
-												onClick={() => {
-													// Remove that ammenities
-													ammenities.splice(id, 1);
-													setAmmenities([...ammenities]);
-												}}>
-												{a ?? ""}
+					<div className="relative w-full h-[calc(100%-40px)]">
+						{/* Form for the property details */}
+						<form
+							ref={formRef}
+							action=""
+							method="POST"
+							encType="multipart/form-data"
+							className="relative w-full h-full flex justify-center"
+							onSubmit={(event) => uploadFormData(event)}>
+							<div className="relative w-full h-full p-4 pb-14 overflow-auto">
+								<div className="relative w-full h-auto grid gap-5">
+									<div className="relative flex items-center gap-5 flex-wrap">
+										{/* Name of the Owner */}
+										<div className="h-auto grid gap-2 justify-items-start">
+											<div className="text-xs font-robotoUIMedium">
+												<span>{"Name of the Owner*"}</span>
 											</div>
-										))}
-									</div>
 
-									{/* Input field for ammenities or the search tags for properties */}
-									<Ammenities
-										ammenities={ammenities}
-										setAmmenities={(val) => {
-											if (ammenities.length < 10) {
-												ammenities.push(val);
+											{/* Input field */}
+											<div className="relative w-auto min-w-[150px] max-w-[200px] h-9 rounded-lg bg-gray-100/40 group">
+												<div className="relative w-full h-full rounded-lg px-4 border flex items-center cursor-default">
+													{owner && owner.length > 0 ? (
+														<span className="text-xs font-robotoUIMedium">
+															{owner}
+														</span>
+													) : (
+														<>
+															<div className="inline-flex items-center gap-4">
+																<span className="text-xs font-robotoUIMedium">
+																	Select Property Owner{" "}
+																</span>
+
+																<div className="text-gray-600">
+																	<FiChevronDown size={18} />
+																</div>
+															</div>
+														</>
+													)}
+												</div>
+
+												{/* Absolute Dropdown */}
+												{profiles.length > 0 && (
+													<>
+														<div className="absolute left-0 top-7 invisible opacity-0 z-40 w-auto h-auto p-1 rounded-lg shadow-lg bg-white duration-200 ease-in-out border grid gap-0 cursor-default group-hover:opacity-100 group-hover:visible group-hover:top-10">
+															{profiles.map((p, i) => (
+																<div
+																	key={i}
+																	onClick={() => {
+																		setOwner(p.fullname);
+
+																		storage.set("owner", p.fullname);
+																	}}
+																	className={
+																		"relative w-auto px-4 py-2 text-xs font-robotoUIMedium duration-200 cursor-pointer rounded-md text-gray-600 hover:text-gray-900 " +
+																		(owner === p.fullname
+																			? "bg-gray-100"
+																			: "hover:bg-gray-100")
+																	}>
+																	<span>{p.fullname ?? ""}</span>
+																</div>
+															))}
+														</div>
+													</>
+												)}
+											</div>
+										</div>
+
+										{/* Name of the property */}
+										<TextField
+											id={"propertyName"}
+											title={"Name of the Property ( < 50 )"}
+											defaultValue={propertyName}
+											setVal={(val) => {
+												setPropertyName(val);
+
+												// Remove all spaces and replace spaces to '-'
+												let tag = val.toLowerCase().replace(/\s\s+/g, " ");
+												tag = tag.replace(/\s/g, "-");
+												ammenities[0] = tag;
 												setAmmenities([...ammenities]);
 
-												storage.set("ammenities", ammenities);
-											}
-										}}
-									/>
-								</div>
+												storage.set("propertyName", val);
+											}}
+											required
+											minLength={3}
+											maxLength={50}
+										/>
 
-								<div className="relative flex items-center gap-5 flex-wrap">
-									{isPlot ? (
-										<>
-											{/* Area of the field */}
-											<Area
-												setArea={(val) => {
-													setArea(val);
+										{/* Location of the property where it is located */}
+										<TextField
+											id={"location"}
+											title={"Name of the Location"}
+											defaultValue={location}
+											setVal={(val) => {
+												setLocation(val);
 
-													storage.set("area", val);
-												}}
-												area={area}
-											/>
-										</>
-									) : (
-										<>
-											{/* Input field for bhk */}
-											<Bhk
-												setBhk={(val) => {
-													setBhk(val);
+												// Remove all spaces and replace spaces to '-'
+												let tag = val.toLowerCase().replace(/\s\s+/g, " ");
+												tag = tag.replace(/\s/g, "-");
+												ammenities[1] = tag;
+												setAmmenities([...ammenities]);
 
-													storage.set("bhk", val);
-												}}
-												bhk={bhk}
-											/>
-
-											{/* Input field for story */}
-											<Story
-												setStory={(val) => {
-													setStory(val);
-
-													storage.set("story", val);
-												}}
-												story={story}
-											/>
-										</>
-									)}
-
-									{/* Input field for price */}
-									<Price
-										setPrice={(val) => {
-											setPrice(val);
-
-											storage.set("price", val);
-										}}
-										price={price}
-									/>
-
-									{/* Input field for latitude */}
-									<Lat
-										setLat={(val) => {
-											setLat(val);
-
-											storage.set("lat", val);
-										}}
-										lat={lat}
-									/>
-
-									{/* Input filed for longitude */}
-									<Lon
-										setLon={(val) => {
-											setLon(val);
-
-											storage.set("lon", val);
-										}}
-										lon={lon}
-									/>
-								</div>
-
-								{/* Add Images */}
-								<div className="h-auto grid gap-2 justify-items-start">
-									<div className="text-xs inline-flex gap-2 dark:text-gray-300">
-										<span>{"Property Images "}</span>
-										<span className="dark:text-white">
-											<span className="text-gray-500">{"("}</span>
-											<b>{" Note :"}</b>
-										</span>
-										<span className="text-gray-500">
-											{"Image Size should be < 5MB and <= 10 images )"}
-										</span>
-
-										<span className="dark:text-red-300 text-red-400 uppercase">
-											Don't refresh the page ⚠️
-										</span>
-
-										{/* Clear all selected images */}
-										{images.length > 0 && (
-											<div
-												className="text-blue-400 font-robotoUIMedium cursor-pointer"
-												onClick={() => setImages([])}>
-												Clear All
-											</div>
-										)}
+												storage.set("location", val);
+											}}
+											minLength={3}
+											maxLength={20}
+											required
+										/>
 									</div>
 
-									<div className="relative w-auto h-auto flex flex-wrap gap-2">
-										{images.map((file, index) => (
-											<div
-												key={index}
-												className="relative w-40 h-40 overflow-hidden rounded-xl bg-transparent hover:bg-gray-700/5 hover:shadow-2xl duration-200 ease-linear group flex items-center justify-center">
-												{/* Absolute cross icon */}
-												<div className="absolute z-30 top-0 right-0 w-12 h-12 bg-transparent flex items-center justify-center cursor-pointer invisible group-hover:visible duration-200">
-													<div
-														className="relative flex items-center justify-center w-6 h-6 rounded-full bg-transparent group-hover:bg-gray-800 duration-100 ease-linear text-gray-400 scale-0 group-hover:scale-100"
-														onClick={() => {
-															images.splice(index, 1);
+									<div className="relative flex items-start gap-5 flex-wrap">
+										{/* Landmark or the info of the property */}
+										<Landmark
+											setLandmark={(val) => {
+												setLandmark(val);
 
-															setImages([...images]);
-														}}>
-														<FiX size={15} />
-													</div>
+												storage.set("landmark", val);
+											}}
+											defaultValue={landmark}
+										/>
+
+										{/* Set if the property is plot or a house false:house && viceversa */}
+										<IsPlot
+											isPlot={isPlot}
+											updatePlot={(plot) => {
+												setIsPlot(plot);
+
+												storage.set("isPlot", plot);
+											}}
+										/>
+									</div>
+
+									{/* Ammenities */}
+									<div className="h-auto grid gap-2 justify-items-start">
+										<label
+											htmlFor="ammenities"
+											className="text-xs font-robotoUIMedium">
+											<span>{"Ammenities or Tags"}</span>
+										</label>
+
+										{/* Ammenities */}
+										<div className="relative w-1/2 flex gap-2 flex-wrap">
+											{ammenities.map((a, id) => (
+												<div
+													key={id}
+													className="relative px-2 py-1 rounded cursor-pointer text-xs dark:bg-gray-800/40 bg-gray-200 dark:text-gray-400 hover:shadow-2xl"
+													onClick={() => {
+														// Remove that ammenities
+														ammenities.splice(id, 1);
+														setAmmenities([...ammenities]);
+													}}>
+													{a ?? ""}
 												</div>
+											))}
+										</div>
 
-												<img
-													src={URL.createObjectURL(file.blob)}
-													alt={file.name ?? "Property Images"}
-													title={file.name ?? "Property Images"}
-													className="relative w-full h-full flex items-center bg-transparent rounded-xl object-cover object-center cursor-pointer group-hover:opacity-50 duration-200"
+										{/* Input field for ammenities or the search tags for properties */}
+										<Ammenities
+											ammenities={ammenities}
+											setAmmenities={(val) => {
+												if (ammenities.length < 10) {
+													ammenities.push(val);
+													setAmmenities([...ammenities]);
+
+													storage.set("ammenities", ammenities);
+												}
+											}}
+										/>
+									</div>
+
+									<div className="relative flex items-center gap-5 flex-wrap">
+										{isPlot ? (
+											<>
+												{/* Area of the field */}
+												<Area
+													setArea={(val) => {
+														setArea(val);
+
+														storage.set("area", val);
+													}}
+													area={area}
+												/>
+											</>
+										) : (
+											<>
+												{/* Input field for bhk */}
+												<Bhk
+													setBhk={(val) => {
+														setBhk(val);
+
+														storage.set("bhk", val);
+													}}
+													bhk={bhk}
 												/>
 
-												{/* Absolute file size */}
-												<div className="absolute z-40 bottom-2 px-2 py-1 rounded-lg bg-gray-700 text-[10px] text-gray-200">
-													{file.labeledSize ?? ""}
-												</div>
-											</div>
-										))}
+												{/* Input field for story */}
+												<Story
+													setStory={(val) => {
+														setStory(val);
+
+														storage.set("story", val);
+													}}
+													story={story}
+												/>
+											</>
+										)}
+
+										{/* Input field for price */}
+										<Price
+											setPrice={(val) => {
+												setPrice(val);
+
+												storage.set("price", val);
+											}}
+											price={price}
+										/>
+
+										{/* Input field for latitude */}
+										<Lat
+											setLat={(val) => {
+												setLat(val);
+
+												storage.set("lat", val);
+											}}
+											lat={lat}
+										/>
+
+										{/* Input filed for longitude */}
+										<Lon
+											setLon={(val) => {
+												setLon(val);
+
+												storage.set("lon", val);
+											}}
+											lon={lon}
+										/>
 									</div>
+
+									{/* Add Images */}
+									<div className="h-auto grid gap-2 justify-items-start">
+										<div className="text-xs inline-flex gap-2 dark:text-gray-300">
+											<span>{"Property Images "}</span>
+											<span className="dark:text-white">
+												<span className="text-gray-500">{"("}</span>
+												<b>{" Note :"}</b>
+											</span>
+											<span className="text-gray-500">
+												{"Image Size should be < 5MB and <= 10 images )"}
+											</span>
+
+											<span className="dark:text-red-300 text-red-400 uppercase">
+												Don't refresh the page ⚠️
+											</span>
+
+											{/* Clear all selected images */}
+											{images.length > 0 && (
+												<div
+													className="text-blue-400 font-robotoUIMedium cursor-pointer"
+													onClick={() => setImages([])}>
+													Clear All
+												</div>
+											)}
+										</div>
+
+										<div className="relative w-auto h-auto flex flex-wrap gap-2">
+											{images.map((file, index) => (
+												<div
+													key={index}
+													className="relative w-40 h-40 overflow-hidden rounded-xl bg-transparent hover:bg-gray-700/5 hover:shadow-2xl duration-200 ease-linear group flex items-center justify-center">
+													{/* Absolute cross icon */}
+													<div className="absolute z-30 top-0 right-0 w-12 h-12 bg-transparent flex items-center justify-center cursor-pointer invisible group-hover:visible duration-200">
+														<div
+															className="relative flex items-center justify-center w-6 h-6 rounded-full bg-transparent group-hover:bg-gray-800 duration-100 ease-linear text-gray-400 scale-0 group-hover:scale-100"
+															onClick={() => {
+																images.splice(index, 1);
+
+																setImages([...images]);
+															}}>
+															<FiX size={15} />
+														</div>
+													</div>
+
+													<img
+														src={URL.createObjectURL(file.blob)}
+														alt={file.name ?? "Property Images"}
+														title={file.name ?? "Property Images"}
+														className="relative w-full h-full flex items-center bg-transparent rounded-xl object-cover object-center cursor-pointer group-hover:opacity-50 duration-200"
+													/>
+
+													{/* Absolute file size */}
+													<div className="absolute z-40 bottom-2 px-2 py-1 rounded-lg bg-gray-700 text-[10px] text-gray-200">
+														{file.labeledSize ?? ""}
+													</div>
+												</div>
+											))}
+										</div>
+									</div>
+
+									{images.length < 10 ? (
+										<SelectImages
+											images={images}
+											setImages={(payload) => setImages([...payload])}
+										/>
+									) : null}
 								</div>
-
-								{images.length < 10 ? (
-									<SelectImages
-										images={images}
-										setImages={(payload) => setImages([...payload])}
-									/>
-								) : null}
 							</div>
-						</div>
 
-						{/* Finally Submit button */}
-						<div className="absolute z-40 left-0 bottom-0 w-full h-auto bg-gray-800/50 backdrop-blur-3xl flex flex-wrap">
-							<button
-								type={"submit"}
-								id="submitForm"
-								className="relative outline-none border-none bg-blue-500 w-full px-6 h-10 flex items-center justify-center font-robotoUIMedium text-sm text-gray-200 duration-100 hover:text-white hover:bg-blue-600">
-								<span>Submit Data</span>
-							</button>
-						</div>
-					</form>
+							{/* Finally Submit button */}
+							<div className="absolute z-40 left-0 bottom-0 w-full h-auto bg-gray-800/50 backdrop-blur-3xl flex flex-wrap">
+								<button
+									type={"submit"}
+									id="submitForm"
+									className="relative outline-none border-none bg-blue-500 w-full px-6 h-10 flex items-center justify-center font-robotoUIMedium text-sm text-gray-200 duration-100 hover:text-white hover:bg-blue-600">
+									<span>Submit Data</span>
+								</button>
+							</div>
+						</form>
+					</div>
 				</div>
-			</div>
-		</>
-	);
+			</>
+		);
+	} else {
+		return <ProfileNotCreated />;
+	}
 }
 
 export default AddProperties;

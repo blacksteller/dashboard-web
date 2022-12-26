@@ -63,7 +63,7 @@ export default function SidebarContextProvider({ children }) {
 					to: "/profiles",
 					title: "Profiles",
 					icon: <FiFigma size={18} />,
-					siblings: ["Add"],
+					siblings: ["Create"],
 				},
 			],
 		},

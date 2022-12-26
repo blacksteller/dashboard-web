@@ -1,13 +1,21 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { FiPlus } from "react-icons/fi";
 import { TextField } from "./fields";
 import { saveProfile, updateProfileUrl } from "./utils/save-profile";
 import { ContainerContext } from "../../../../contexts/Container";
 
 function AddBrokerProfile() {
-	const { setAppTitle, setOpenModal, setUploading, setUploadingInfo } =
-		useContext(ContainerContext);
+	const {
+		setAppTitle,
+		fetchProfiles,
+		setOpenModal,
+		setUploading,
+		setUploadingInfo,
+	} = useContext(ContainerContext);
+
+	// Profile Image Ref
+	const profileImageRef = useRef();
 
 	const [imgErr, setImgErr] = useState(null);
 	const [profileImage, setProfileImage] = useState({
@@ -96,54 +104,124 @@ function AddBrokerProfile() {
 	const createProfile = async (e) => {
 		e.preventDefault();
 
-		// One last confirmation before creating profile
-		const confirmUpload = window.confirm("Are you sure you want to continue?");
+		// Check if the profile image is provided or not
+		if (profileImage.file == null) {
+			const confirmWithoutProfileImage = window.confirm(
+				"Profile image is not provided\nDo you want to continue without it?"
+			);
 
-		// Create profile if it is confirmed 👍
-		if (confirmUpload) {
-			const profileData = {
-				firstname,
-				lastname,
-				middlename,
-				username,
-				fullname: `${firstname} ${middlename ?? ""} ${lastname}`,
-				phone,
-				address,
-				url: "",
-			};
+			if (confirmWithoutProfileImage) {
+				// One last confirmation before creating profile
+				const confirmUpload = window.confirm(
+					"Are you sure you want to continue?"
+				);
 
-			setOpenModal(true);
-			setUploading(true);
-			setUploadingInfo("Uploading Profile Data 🚀");
+				// Create profile if it is confirmed 👍
+				if (confirmUpload) {
+					const profileData = {
+						firstname,
+						lastname,
+						middlename,
+						username,
+						phone,
+						address,
+						url: "",
+					};
 
-			await saveProfile(profileData, profileImage.uri)
-				.then(async (res) => {
-					setUploadingInfo(res.msg);
+					setOpenModal(true);
+					setUploading(true);
+					setUploadingInfo("Uploading Profile Data 🚀");
 
-					await updateProfileUrl(res.id, res.url)
-						.then((response) => {
-							setUploadingInfo(response.msg);
+					await saveProfile(profileData, profileImage.uri)
+						.then(async (res) => {
+							setUploadingInfo(res.msg);
 
-							console.log(response);
+							await updateProfileUrl(res.id, res.url)
+								.then((response) => {
+									setUploadingInfo(response.msg);
+
+									console.log(response);
+								})
+								.catch((error) => {
+									setUploadingInfo(error.msg);
+
+									console.error(error);
+								})
+								.finally(() => {
+									setUploading(false);
+									fetchProfiles();
+								});
+
+							console.log(res);
 						})
 						.catch((error) => {
 							setUploadingInfo(error.msg);
+							setUploading(false);
 
 							console.error(error);
 						})
-						.finally(() => setUploading(false));
-
-					console.log(res);
-				})
-				.catch((error) => {
-					setUploadingInfo(error.msg);
-					setUploading(false);
-
-					console.error(error);
-				})
-				.finally(() => clearAllField());
+						.finally(() => clearAllField());
+				} else {
+					return;
+				}
+			} else {
+				profileImageRef.current.click();
+			}
 		} else {
-			return;
+			// One last confirmation before creating profile
+			const confirmUpload = window.confirm(
+				"Are you sure you want to continue?"
+			);
+
+			// Create profile if it is confirmed 👍
+			if (confirmUpload) {
+				const profileData = {
+					firstname,
+					lastname,
+					middlename,
+					username,
+					fullname: `${firstname} ${middlename ?? ""} ${lastname}`,
+					phone,
+					address,
+					url: "",
+				};
+
+				setOpenModal(true);
+				setUploading(true);
+				setUploadingInfo("Uploading Profile Data 🚀");
+
+				await saveProfile(profileData, profileImage.uri)
+					.then(async (res) => {
+						setUploadingInfo(res.msg);
+
+						await updateProfileUrl(res.id, res.url)
+							.then((response) => {
+								setUploadingInfo(response.msg);
+
+								console.log(response);
+							})
+							.catch((error) => {
+								setUploadingInfo(error.msg);
+
+								console.error(error);
+							})
+							.finally(() => {
+								setUploading(false);
+								fetchProfiles();
+							});
+
+						console.log(res);
+					})
+					.catch((error) => {
+						setUploadingInfo(error.msg);
+						setUploading(false);
+
+						console.error(error);
+					})
+					.finally(() => clearAllField());
+			} else {
+				return;
+			}
 		}
 	};
 
@@ -210,6 +288,7 @@ function AddBrokerProfile() {
 
 					{/* File Input */}
 					<input
+						ref={profileImageRef}
 						id="profileImageInput"
 						type={"file"}
 						accept={"image/*png, image/jpg, image/jpeg"}

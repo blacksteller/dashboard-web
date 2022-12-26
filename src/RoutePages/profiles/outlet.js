@@ -17,7 +17,7 @@ function ProfilesPageOutlet() {
 
 					{/* Add Broker Profile */}
 					<Route
-						path="add"
+						path="create"
 						element={<AddBrokerProfile />}
 					/>
 

@@ -290,7 +290,9 @@ export default function PropertiesPage() {
 												<div className="relative w-full h-auto grid gap-0">
 													<div className="relative w-full flex items-center justify-between">
 														<div className="text-base dark:text-white inline-flex gap-2">
-															<span>{property.title ?? "Property Name"}</span>
+															<span>
+																{property.propertyName ?? "Property Name"}
+															</span>
 
 															<div className="relative rounded w-5 h-5 dark:bg-gray-800 bg-gray-200 text-xs flex items-center justify-center">
 																{property.plot ? "🅿️" : "🏠"}
